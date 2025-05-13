@@ -180,29 +180,33 @@ namespace StarLaiPortal.Module.Controllers
             //if (DateTime.Now.Minute.ToString("00").Substring(1, 1) == "0" ||
             //    DateTime.Now.Minute.ToString("00").Substring(1, 1) == "3" ||
             //    DateTime.Now.Minute.ToString("00").Substring(1, 1) == "6")
-            if (DateTime.Now.Minute.ToString("00").Substring(1, 1) == "0" || 
-                DateTime.Now.Minute.ToString("00").Substring(1, 1) == "5")
+            //if (DateTime.Now.Minute.ToString("00").Substring(1, 1) == "0" || 
+            //    DateTime.Now.Minute.ToString("00").Substring(1, 1) == "5")
+            //{
+            bool upd = false;
+            SqlConnection conn = new SqlConnection(getConnectionString());
+            string getRMBool = "SELECT ReleaseMemory FROM [" + ConfigurationManager.AppSettings.Get("CommonTable").ToString() + "]..ODBC WHERE " +
+                "DBName = '" + conn.Database + "'";
+            if (conn.State == ConnectionState.Open)
             {
-                SqlConnection conn = new SqlConnection(getConnectionString());
-                string getRMBool = "SELECT ReleaseMemory FROM [" + ConfigurationManager.AppSettings.Get("CommonTable").ToString() + "]..ODBC WHERE " +
-                    "DBName = '" + conn.Database + "'";
-                if (conn.State == ConnectionState.Open)
-                {
-                    conn.Close();
-                }
-                conn.Open();
-                SqlCommand cmd = new SqlCommand(getRMBool, conn);
-                SqlDataReader reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    if (reader.GetBoolean(0) == false)
-                    {
-                        MemoryManagement.FlushGCMemory();
-                    }
-                }
-                cmd.Dispose();
                 conn.Close();
+            }
+            conn.Open();
+            SqlCommand cmd = new SqlCommand(getRMBool, conn);
+            SqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                if (reader.GetBoolean(0) == false)
+                {
+                    MemoryManagement.FlushGCMemory();
+                    upd = true;
+                }
+            }
+            cmd.Dispose();
+            conn.Close();
 
+            if (upd == true)
+            {
                 SqlCommand TransactionNotification = new SqlCommand("", conn);
                 TransactionNotification.CommandTimeout = 600;
 
@@ -221,6 +225,7 @@ namespace StarLaiPortal.Module.Controllers
                 TransactionNotification.Dispose();
                 conn.Close();
             }
+            //}
             // End ver 1.0.15
         }
         protected override void OnViewControlsCreated()
